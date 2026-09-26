@@ -20,6 +20,11 @@ def get_args_parser():
     parser.add_argument("--steps", type=int, default=10_000)
     parser.add_argument("--save_steps", type=int, default=1_000)
     parser.add_argument("--log_steps", type=int, default=50)
+    # Weights & Biases
+    parser.add_argument("--wandb", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--wandb_entity", type=str, default=None)  # None: your default wandb entity
+    parser.add_argument("--wandb_project", type=str, default="sae-for-vlm")
+    parser.add_argument("--wandb_name", type=str, default=None)  # None: checkpoint dir name
     # JumpRelu
     parser.add_argument("--bandwidth", type=float, default=0.001)
     parser.add_argument("--sparsity_penalty", type=float, default=0.1)
@@ -99,14 +104,16 @@ def train_sae(args):
     dataset_name = Path(args.activations_dir).name
     save_dir = Path(args.checkpoints_dir) / f"{dataset_name}_{args.sae_model}_{args.k}_x{args.expansion_factor}"
     save_dir.mkdir(parents=True, exist_ok=True)
+    trainer_cfg["wandb_name"] = args.wandb_name or save_dir.name
 
     ae = trainSAE(
         data=dataloader,
         val_data=val_dataloader,
         trainer_configs=[trainer_cfg],
-        use_wandb=True,
-        wandb_entity="mateuszpach",
-        wandb_project="Clip SAE",
+        use_wandb=args.wandb,
+        wandb_entity=args.wandb_entity,
+        wandb_project=args.wandb_project,
+        run_cfg={f"args/{k}": v for k, v in vars(args).items()},
         steps=args.steps,
         save_steps=[x for x in range(0, args.steps, args.save_steps)],
         save_dir=save_dir,

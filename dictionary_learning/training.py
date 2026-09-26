@@ -28,7 +28,11 @@ def new_wandb_process(config, log_queue, entity, project):
             log = log_queue.get(timeout=1)
             if log == "DONE":
                 break
-            wandb.log(log)
+            if "config_update" in log:
+                wandb.config.update(log["config_update"], allow_val_change=True)
+                continue
+            step = log.pop("step", None)
+            wandb.log(log, step=step)
         except Empty:
             continue
     wandb.finish()
@@ -79,6 +83,10 @@ def log_stats(
                     value = value.cpu().item()
                 log[f"{name}"] = value
 
+            if hasattr(trainer, "scheduler"):
+                log["lr"] = trainer.scheduler.get_last_lr()[0]
+            log["step"] = step
+
             if log_queues:
                 log_queues[i].put(log)
 
@@ -110,7 +118,7 @@ def get_norm_factor(data, steps: int) -> float:
     return norm_factor
 
 # Assumes only one trainer and one log queue
-def validation(val_data, autocast_dtype, trainer, log_queue, norm_factor):
+def validation(val_data, autocast_dtype, trainer, log_queue, norm_factor, step):
     for use_threshold in [False, True]:
         l0s = []
         l2s = []
@@ -147,6 +155,7 @@ def validation(val_data, autocast_dtype, trainer, log_queue, norm_factor):
             f"val_threshold_{threshold_str}/sparsity_l0": t.mean(t.tensor(l0s)).item(),
             f"val_threshold_{threshold_str}/reconstruction_l2": t.mean(t.tensor(l2s)).item(),
             f"val_threshold_{threshold_str}/frac_variance_explained": t.mean(t.tensor(fracs)).item(),
+            "step": step,
         }
 
         log_queue.put(log)
@@ -238,6 +247,8 @@ def trainSAE(
             trainer.config["norm_factor"] = norm_factor
             # Verify that all autoencoders have a scale_biases method
             trainer.ae.scale_biases(1.0)
+        for queue in log_queues:
+            queue.put({"config_update": {"norm_factor": norm_factor}})
 
     # def rand_cycle(iterable):
     #     while True:
@@ -263,8 +274,8 @@ def trainSAE(
 
         # logging validation
         # if (use_wandb or verbose) and step % save_steps == 0:
-        if step % log_steps == 0:
-            validation(val_data, autocast_dtype, trainers[0], log_queues[0], norm_factor)
+        if log_queues and step % log_steps == 0:
+            validation(val_data, autocast_dtype, trainers[0], log_queues[0], norm_factor, step)
 
         # saving
         if save_steps is not None and step in save_steps:

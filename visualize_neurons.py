@@ -1,4 +1,5 @@
 import numpy as np
+import tqdm
 from matplotlib import pyplot as plt
 from PIL import Image
 import os
@@ -63,9 +64,7 @@ if __name__ == "__main__":
         end_idx = start_idx + group_size
         group_neurons = range(start_idx, end_idx)
 
-        for neuron_id, absolute_id in enumerate(group_neurons[:5000]):
-            print(f"Visualizing neuron {neuron_id} (absolute {absolute_id}) in group {group_idx}", flush=True)
-
+        for neuron_id, absolute_id in tqdm.tqdm(list(enumerate(group_neurons[:5000])), desc=f"Visualizing group {group_idx}"):
             important = importants[absolute_id]
             images = [ds[i][0] for i in important]
             s = int(np.sqrt(args.top_k))

@@ -2,10 +2,11 @@
 # Minimal CPU-friendly run: train one Matryoshka SAE on CLIP-B/32 final image embeddings
 # (post_projection, -1) using Imagenette, then visualize the top-activating images per neuron.
 # Usage: bash experiments/imagenette_quickstart.sh   (run from anywhere; DATA_ROOT defaults to ~/data)
+# Training is tracked in Weights & Biases (run `wandb login` once). WANDB_MODE=offline or disabled to skip.
 
 set -euo pipefail
+export TQDM_DYNAMIC_NCOLS=1
 cd "$(dirname "$0")/.."
-export WANDB_MODE=disabled
 
 DATA_ROOT="${DATA_ROOT:-$HOME/data}"
 DATASET_PATH="${DATA_ROOT}/imagenette2-160"
@@ -17,6 +18,7 @@ K=20
 STEPS=2000
 GROUP_FRACTIONS=(0.0625 0.125 0.25 0.5625)
 NUM_WORKERS=2
+WANDB_PROJECT="${WANDB_PROJECT:-sae-for-vlm}"
 
 RAW_DIR="./activations_dir/raw/imagenette"
 SAE_ACTS_DIR="./activations_dir/matroyshka_batch_top_k_${K}_x${EXPANSION_FACTOR}/imagenette_train"
@@ -67,12 +69,14 @@ if [ ! -f "${SAE_PATH}" ]; then
     --expansion_factor "${EXPANSION_FACTOR}" \
     --steps "${STEPS}" \
     --save_steps 1000 \
-    --log_steps 200 \
+    --log_steps 50 \
     --batch_size 1024 \
     --k "${K}" \
     --auxk_alpha 0.03 \
     --decay_start $((STEPS - 1)) \
-    --group_fractions "${GROUP_FRACTIONS[@]}"
+    --group_fractions "${GROUP_FRACTIONS[@]}" \
+    --wandb_project "${WANDB_PROJECT}" \
+    --wandb_name "imagenette_${MODEL_NAME}_${POINT}_matryoshka_x${EXPANSION_FACTOR}_k${K}"
 fi
 
 # 3. Save SAE activations on the train split

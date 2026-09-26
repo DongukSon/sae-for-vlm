@@ -1,0 +1,36 @@
+# Virtual environments
+**/.venv/
+**/venv/
+**/env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.Python
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Model outputs / weights
+*.pt
+*.pth
+*.safetensors
+*.ckpt
+*.npy
+*.npz
+
+# Environment variables / secrets
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Independent sub-projects (each has its own git repo, managed separately)
+sae-for-vlm/

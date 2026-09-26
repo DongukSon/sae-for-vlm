@@ -13,7 +13,7 @@ def get_args_parser():
     parser.add_argument("--split", default="train", type=str)
     parser.add_argument("--batch_size", default=128, type=int)
     parser.add_argument("--num_workers", default=10, type=int)
-    parser.add_argument("--device", default="cuda:0")
+    parser.add_argument("--device", default="cuda:0" if torch.cuda.is_available() else "cpu")
     return parser
 
 

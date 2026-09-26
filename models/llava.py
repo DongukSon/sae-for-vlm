@@ -9,8 +9,9 @@ class Llava:
     def __init__(self, device):
         self.device = device
         self.layer = 22
+        self.dtype = torch.float16 if "cuda" in str(device) else torch.float32
         self.model = LlavaForConditionalGeneration.from_pretrained("llava-hf/llava-1.5-7b-hf",
-                                                                   torch_dtype=torch.float16,
+                                                                   torch_dtype=self.dtype,
                                                                    device_map=self.device)
         self.processor = AutoProcessor.from_pretrained("llava-hf/llava-1.5-7b-hf")
         self.base_CLIPEncoderLayerPostMlpResidual = copy.deepcopy(
@@ -29,14 +30,14 @@ class Llava:
         ]
         prompt = self.processor.apply_chat_template(conversation, add_generation_prompt=True)
         inputs = self.processor(images=[image], text=[prompt],
-                                padding=True, return_tensors="pt").to(self.model.device, torch.float16)
+                                padding=True, return_tensors="pt").to(self.model.device, self.dtype)
         generate_ids = self.model.generate(**inputs, max_new_tokens=max_tokens)
         output = self.processor.batch_decode(generate_ids, skip_special_tokens=True)
         output = [x.split('ASSISTANT: ')[-1] for x in output]
         return output
 
     def attach_and_fix(self, sae, neurons_to_fix={}, pre_zero=False):
-        modified_sae = SAEWrapper(sae, neurons_to_fix, pre_zero)
+        modified_sae = SAEWrapper(sae, neurons_to_fix, pre_zero, self.dtype)
         self.model.vision_tower.vision_model.encoder.layers[self.layer] = CLIPEncoderLayerPostMlpResidual(
             self.base_CLIPEncoderLayerPostMlpResidual,
             modified_sae,
@@ -45,8 +46,9 @@ class Llava:
 
 class SAEWrapper(nn.Module):
 
-    def __init__(self, sae, neurons_to_fix, pre_zero):
+    def __init__(self, sae, neurons_to_fix, pre_zero, dtype=torch.float16):
         super().__init__()
+        self.dtype = dtype
         self.sae = sae
         self.neurons_to_fix = neurons_to_fix
         self.pre_zero = pre_zero
@@ -61,7 +63,7 @@ class SAEWrapper(nn.Module):
 
     def decode(self, x):
         x = self.sae.decode(x)
-        x = x.to(dtype=torch.float16)
+        x = x.to(dtype=self.dtype)
         return x
 
 

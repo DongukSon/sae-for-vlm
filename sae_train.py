@@ -13,7 +13,7 @@ def get_args_parser():
     parser.add_argument("--activations_dir", required=True, type=str)
     parser.add_argument("--val_activations_dir", required=True, type=str)
     parser.add_argument("--checkpoints_dir", default="./output_dir", type=str)
-    parser.add_argument("--device", default="cuda:0")
+    parser.add_argument("--device", default="cuda:0" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--expansion_factor", type=int, default=1)
     parser.add_argument("--lr", type=float)
     parser.add_argument("--batch_size", type=int, default=8192)
@@ -111,6 +111,7 @@ def train_sae(args):
         save_steps=[x for x in range(0, args.steps, args.save_steps)],
         save_dir=save_dir,
         log_steps=args.log_steps,
+        device=args.device,
     )
 
 

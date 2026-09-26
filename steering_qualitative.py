@@ -2,10 +2,12 @@ from models.llava import Llava
 from dictionary_learning.trainers import MatroyshkaBatchTopKSAE
 from PIL import Image
 import requests
+import torch
 
-llava = Llava("cuda")
+device = "cuda" if torch.cuda.is_available() else "cpu"
+llava = Llava(device)
 sae_path = "checkpoints_dir/matroyshka_batch_top_k_20_x64/random_k_2/imagenet_train_activations_clip-vit-large-patch14-336_22_post_mlp_residual_matroyshka_batch_top_k_20_x64/trainer_0/checkpoints/ae_200000.pt"
-sae = MatroyshkaBatchTopKSAE.from_pretrained(sae_path).cuda()
+sae = MatroyshkaBatchTopKSAE.from_pretrained(sae_path).to(device)
 text = "Write me a short love poem"
 url = "https://img.freepik.com/free-photo/cement-texture_1194-5269.jpg?semt=ais_hybrid"
 image = Image.open(requests.get(url, stream=True).raw)

@@ -30,7 +30,7 @@ def get_args_parser():
     parser.add_argument("--take_every", default=1, type=int)
     parser.add_argument("--random_k", default=-1, type=int)
     parser.add_argument("--save_every", default=50_000, type=int)
-    parser.add_argument("--device", default="cuda:0")
+    parser.add_argument("--device", default="cuda:0" if torch.cuda.is_available() else "cpu")
     return parser
 
 def save_activations(activations, count, split, save_count, args):

@@ -17,7 +17,7 @@ def parse_args():
     parser.add_argument('--sae_path', type=str, default=None)
     parser.add_argument('--images_path', type=str, required=True)
     parser.add_argument("--model_name", type=str, required=True)
-    parser.add_argument("--device", type=str, default="cuda")
+    parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--pre_zero", action=argparse.BooleanOptionalAction)
     parser.add_argument('--output_path', type=str, required=True)
     parser.add_argument('--neuron_prefix', type=int, default=None)

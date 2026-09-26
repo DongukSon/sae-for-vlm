@@ -42,15 +42,16 @@ def main(args):
     weighted_cosine_similarity_sum = torch.zeros(num_neurons, device=torch.device(args.device))
     weight_sum = torch.zeros(num_neurons, device=torch.device(args.device))
     batch_size = 100  # Set batch size
+    compute_device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     for i in tqdm.tqdm(range(num_images), desc="Processing image pairs"):
         for j_start in range(i + 1, num_images, batch_size):  # Process in batches
             j_end = min(j_start + batch_size, num_images)
 
-            embeddings_i = embeddings[i].cuda()  # (embedding_dim)
-            embeddings_j = embeddings[j_start:j_end].cuda()  # (batch_size, embedding_dim)
-            activations_i = activations[i].cuda()  # (num_neurons)
-            activations_j = activations[j_start:j_end].cuda()  # (batch_size, num_neurons)
+            embeddings_i = embeddings[i].to(compute_device)  # (embedding_dim)
+            embeddings_j = embeddings[j_start:j_end].to(compute_device)  # (batch_size, embedding_dim)
+            activations_i = activations[i].to(compute_device)  # (num_neurons)
+            activations_j = activations[j_start:j_end].to(compute_device)  # (batch_size, num_neurons)
 
             # Compute cosine similarity
             cosine_similarities = F.cosine_similarity(

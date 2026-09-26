@@ -51,7 +51,7 @@ def compute_similarity(image_embeddings, text_embeddings):
 
 if __name__ == "__main__":
     class Args:
-        device = "cuda"
+        device = "cuda" if torch.cuda.is_available() else "cpu"
         image_dir = "./images_imagenet"
         model_name = "clip-vit-base-patch32"
     args = Args()

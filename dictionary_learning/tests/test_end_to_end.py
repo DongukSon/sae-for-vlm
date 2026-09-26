@@ -48,7 +48,7 @@ EXPECTED_RESULTS = {
     },
 }
 
-DEVICE = "cuda:0"
+DEVICE = "cuda:0" if t.cuda.is_available() else "cpu"
 SAVE_DIR = "./test_data"
 MODEL_NAME = "EleutherAI/pythia-70m-deduped"
 RANDOM_SEED = 42

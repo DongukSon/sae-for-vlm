@@ -31,3 +31,8 @@ Thumbs.db
 # Editor
 .vscode/
 .idea/
+
+# Experiment outputs
+activations_dir/
+checkpoints_dir/
+embeddings_dir/

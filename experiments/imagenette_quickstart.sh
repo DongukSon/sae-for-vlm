@@ -17,7 +17,8 @@ EXPANSION_FACTOR=8
 K=20
 STEPS=2000
 GROUP_FRACTIONS=(0.0625 0.125 0.25 0.5625)
-NUM_WORKERS=2
+NUM_WORKERS="${NUM_WORKERS:-2}"
+ACT_BATCH_SIZE="${ACT_BATCH_SIZE:-64}"
 WANDB_PROJECT="${WANDB_PROJECT:-sae-for-vlm}"
 
 RAW_DIR="./activations_dir/raw/imagenette"
@@ -45,7 +46,7 @@ for SPLIT in "train" "val"; do
   if ! is_done "${RAW_DIR}/${SPLIT}"; then
     reset_dir "${RAW_DIR}/${SPLIT}"
     python save_activations.py \
-      --batch_size 64 \
+      --batch_size "${ACT_BATCH_SIZE}" \
       --model_name "${MODEL_NAME}" \
       --attachment_point "${POINT}" \
       --layer "${LAYER}" \
@@ -83,7 +84,7 @@ fi
 if ! is_done "${SAE_ACTS_DIR}"; then
   reset_dir "${SAE_ACTS_DIR}"
   python save_activations.py \
-    --batch_size 64 \
+    --batch_size "${ACT_BATCH_SIZE}" \
     --model_name "${MODEL_NAME}" \
     --attachment_point "${POINT}" \
     --layer "${LAYER}" \

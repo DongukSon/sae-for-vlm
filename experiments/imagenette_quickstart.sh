@@ -9,6 +9,16 @@ set -euo pipefail
 export TQDM_DYNAMIC_NCOLS=1
 cd "$(dirname "$0")/.."
 
+# When output goes to a file/pipe (e.g. `> quickstart.log 2>&1`), keep only the final state of
+# each progress bar and prefix every line with a timestamp. Unbuffered so timestamps are accurate.
+if [ ! -t 1 ]; then
+  export PYTHONUNBUFFERED=1
+  exec > >(python3 -u experiments/log.py) 2>&1
+  LOG_FILTER_PID=$!
+  # On exit, close the pipe and let the filter flush the last lines
+  trap 'exec >&- 2>&-; wait "${LOG_FILTER_PID}"' EXIT
+fi
+
 DATA_ROOT="${DATA_ROOT:-$HOME/data}"
 # Where the downloaded .tgz is kept (on a pod: the network volume, so it is downloaded only once)
 ARCHIVE_ROOT="${ARCHIVE_ROOT:-$DATA_ROOT}"
@@ -40,7 +50,8 @@ reset_dir() { rm -rf "$1"; mkdir -p "$1"; }
 if [ ! -f "${ARCHIVE_PATH}" ]; then
   mkdir -p "${ARCHIVE_ROOT}"
   # Download to a temp name so an interrupted download is not mistaken for a complete archive
-  wget -q --show-progress -O "${ARCHIVE_PATH}.part" \
+  # bar:force redraws one line even when not on a TTY (instead of thousands of dot lines)
+  wget -q --show-progress --progress=bar:force:noscroll -O "${ARCHIVE_PATH}.part" \
     https://s3.amazonaws.com/fast-ai-imageclas/imagenette2-160.tgz
   mv "${ARCHIVE_PATH}.part" "${ARCHIVE_PATH}"
 fi

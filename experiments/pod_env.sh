@@ -30,7 +30,8 @@ if [ -f "${VOLUME}/.pod_secrets" ]; then
   source "${VOLUME}/.pod_secrets"
 fi
 
-# The venv's python symlinks to the container's python3.11, which is gone on a fresh pod
+# The venv's python symlinks to the image's python3 and takes torch from its site-packages,
+# so this only fails if the venv is missing or was built on a different image
 if "${REPO_DIR}/.venv/bin/python" -c 'import torch' 2>/dev/null; then
   source "${REPO_DIR}/.venv/bin/activate"
 else

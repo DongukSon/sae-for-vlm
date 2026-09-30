@@ -1,0 +1,19 @@
+# Minimal dependencies for a RunPod pod (image: runpod/pytorch:2.2.0-py3.10-cuda12.1.1-devel-ubuntu22.04).
+# torch/torchvision are NOT listed: the image's CUDA build is reused via a --system-site-packages venv.
+# Versions match requirements.txt (the full original freeze, still used for local setup);
+# pod_setup.sh also passes requirements.txt as constraints so transitive deps stay pinned.
+# Install with: bash experiments/pod_setup.sh
+transformers==4.46.3
+tokenizers==0.20.3
+safetensors==0.4.5
+huggingface-hub==0.26.3
+sentencepiece==0.2.0  # SigLIP tokenizer
+accelerate==1.1.1  # device_map in models/llava.py
+nnsight==0.3.3  # imported by dictionary_learning/__init__.py
+einops==0.8.0
+numpy==1.26.4
+pillow==11.0.0
+tqdm==4.67.1
+wandb==0.18.7
+matplotlib==3.9.3
+requests==2.32.3

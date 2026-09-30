@@ -2,7 +2,7 @@
 # Per-session environment on a RunPod pod. Source it in every new shell (after pod_setup.sh has run once):
 #   source experiments/pod_env.sh
 # Everything outside /workspace (the network volume) is wiped when the pod stops, so dataset archives,
-# caches, secrets and the git SSH key all live under /workspace.
+# caches, secrets, the git config and SSH key all live under /workspace.
 # Secrets go in /workspace/.pod_secrets (not in git), e.g.:
 #   export WANDB_API_KEY=...
 #   export HF_TOKEN=...
@@ -28,6 +28,9 @@ if [ -f "${VOLUME}/.ssh/id_ed25519" ]; then
   install -m 600 "${VOLUME}/.ssh/id_ed25519" ~/.ssh/id_ed25519_github
   export GIT_SSH_COMMAND="ssh -i ${HOME}/.ssh/id_ed25519_github -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
 fi
+
+# Global git config (user.name/email etc.) kept on the volume; `git config --global` writes here too
+export GIT_CONFIG_GLOBAL="${VOLUME}/.gitconfig"
 
 if [ -f "${VOLUME}/.pod_secrets" ]; then
   source "${VOLUME}/.pod_secrets"

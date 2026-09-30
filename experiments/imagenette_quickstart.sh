@@ -1,7 +1,8 @@
 #!/bin/bash
 # Minimal CPU-friendly run: train one Matryoshka SAE on CLIP-B/32 final image embeddings
 # (post_projection, -1) using Imagenette, then visualize the top-activating images per neuron.
-# Usage: bash experiments/imagenette_quickstart.sh   (run from anywhere; DATA_ROOT defaults to ~/data)
+# Usage: bash experiments/imagenette_quickstart.sh   (run from anywhere; DATA_ROOT defaults to ~/data,
+# ARCHIVE_ROOT for the downloaded .tgz defaults to DATA_ROOT)
 # Training is tracked in Weights & Biases (run `wandb login` once). WANDB_MODE=offline or disabled to skip.
 
 set -euo pipefail
@@ -9,7 +10,10 @@ export TQDM_DYNAMIC_NCOLS=1
 cd "$(dirname "$0")/.."
 
 DATA_ROOT="${DATA_ROOT:-$HOME/data}"
+# Where the downloaded .tgz is kept (on a pod: the network volume, so it is downloaded only once)
+ARCHIVE_ROOT="${ARCHIVE_ROOT:-$DATA_ROOT}"
 DATASET_PATH="${DATA_ROOT}/imagenette2-160"
+ARCHIVE_PATH="${ARCHIVE_ROOT}/imagenette2-160.tgz"
 MODEL_NAME="clip-vit-base-patch32"
 POINT="post_projection"
 LAYER="-1"
@@ -31,13 +35,19 @@ is_done() { [ -f "$1/.done" ]; }
 mark_done() { touch "$1/.done"; }
 reset_dir() { rm -rf "$1"; mkdir -p "$1"; }
 
-# 0. Download Imagenette (160px, ~100MB): train/ and val/ with one folder per class
-if [ ! -d "${DATASET_PATH}" ]; then
-  mkdir -p "${DATA_ROOT}"
-  wget -q --show-progress -O "${DATA_ROOT}/imagenette2-160.tgz" \
+# 0. Download Imagenette (160px, ~100MB) to ARCHIVE_ROOT once, extract to DATA_ROOT:
+# train/ and val/ with one folder per class
+if [ ! -f "${ARCHIVE_PATH}" ]; then
+  mkdir -p "${ARCHIVE_ROOT}"
+  # Download to a temp name so an interrupted download is not mistaken for a complete archive
+  wget -q --show-progress -O "${ARCHIVE_PATH}.part" \
     https://s3.amazonaws.com/fast-ai-imageclas/imagenette2-160.tgz
-  tar xzf "${DATA_ROOT}/imagenette2-160.tgz" -C "${DATA_ROOT}"
-  rm "${DATA_ROOT}/imagenette2-160.tgz"
+  mv "${ARCHIVE_PATH}.part" "${ARCHIVE_PATH}"
+fi
+if ! is_done "${DATASET_PATH}"; then
+  reset_dir "${DATASET_PATH}"
+  tar xzf "${ARCHIVE_PATH}" -C "${DATA_ROOT}"
+  mark_done "${DATASET_PATH}"
 fi
 
 # 1. Save original activations (one vector per image)

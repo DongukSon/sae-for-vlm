@@ -1,8 +1,8 @@
 #!/bin/bash
 # Per-session environment on a RunPod pod. Source it in every new shell (after pod_setup.sh has run once):
 #   source experiments/pod_env.sh
-# Everything outside /workspace (the network volume) is wiped when the pod stops, so data, caches,
-# secrets and the git SSH key all live under /workspace.
+# Everything outside /workspace (the network volume) is wiped when the pod stops, so dataset archives,
+# caches, secrets and the git SSH key all live under /workspace.
 # Secrets go in /workspace/.pod_secrets (not in git), e.g.:
 #   export WANDB_API_KEY=...
 #   export HF_TOKEN=...
@@ -10,12 +10,15 @@
 VOLUME="${VOLUME:-/workspace}"
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-export DATA_ROOT="${VOLUME}/data"
+# Dataset archives stay on the volume; each pod extracts them to the faster container disk
+# (${HOME}/data, wiped on stop) and reads images from there
+export ARCHIVE_ROOT="${VOLUME}/data"
+export DATA_ROOT="${HOME}/data"
 export HF_HOME="${VOLUME}/.cache/huggingface"
 export TORCH_HOME="${VOLUME}/.cache/torch"
 export PIP_CACHE_DIR="${VOLUME}/.cache/pip"
 export WANDB_DIR="${REPO_DIR}"
-mkdir -p "${DATA_ROOT}" "${HF_HOME}" "${TORCH_HOME}" "${PIP_CACHE_DIR}"
+mkdir -p "${ARCHIVE_ROOT}" "${DATA_ROOT}" "${HF_HOME}" "${TORCH_HOME}" "${PIP_CACHE_DIR}"
 
 # SSH key for git pull/push, kept on the volume (~/.ssh does not survive a pod restart).
 # The network volume may not honor chmod (files stay 0666), and ssh rejects such keys,

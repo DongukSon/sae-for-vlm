@@ -39,7 +39,9 @@ pip install --upgrade pip
 CONSTRAINTS="$(mktemp)"
 trap 'rm -f "${CONSTRAINTS}"' EXIT
 grep -vE '^(torch|torchvision|triton|nvidia-[a-z0-9-]+)==' requirements.txt > "${CONSTRAINTS}"
-python -c "import torch, torchvision; print(f'torch=={torch.__version__}'); print(f'torchvision=={torchvision.__version__}')" >> "${CONSTRAINTS}"
+# Use the installed metadata version (what pip matches against), not torch.__version__,
+# which can carry a local tag like +cu121 that the metadata lacks
+python -c "from importlib.metadata import version; print(f'torch=={version(\"torch\")}'); print(f'torchvision=={version(\"torchvision\")}')" >> "${CONSTRAINTS}"
 pip install -r requirements-pod.txt -c "${CONSTRAINTS}"
 
 python - <<'EOF'

@@ -2,12 +2,15 @@
 
 - Progress bars redrawn with '\r' (tqdm, wget) are collapsed to their final state,
   which shows the total elapsed time, e.g. "100%|██| 37/37 [00:20<00:00, 1.8it/s]".
+  Bars that get erased (tqdm leave=False) are dropped, as they are on a terminal.
 - Every line gets a "[YYYY-mm-dd HH:MM:SS]" prefix; blank lines and ANSI escapes are dropped.
 
 Usage: some_command 2>&1 | python -u experiments/log.py
 """
+import codecs
 import os
 import re
+import signal
 import sys
 import time
 
@@ -23,26 +26,29 @@ def emit(line):
 
 
 def main():
-    text = ""      # regular output being accumulated up to the next '\n'
+    # Ctrl-C reaches the whole pipeline: keep running until EOF so the last lines are not lost
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    # Incremental, so a multi-byte character split across two reads is not mangled
+    decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")
+
+    text = ""     # regular output being accumulated up to the next '\n'
     bar = None     # latest complete state of the progress bar being redrawn
     bar_cur = ""   # bar state currently being written (after the last '\r')
     in_bar = False
 
     def settle_bar():
-        # A blank redraw clears the bar (tqdm leave=False): keep its last visible state
+        # A blank redraw erases the bar: tqdm.write() does it before printing (and redraws the
+        # bar afterwards), leave=False does it on close. Either way that state is not a final one
         nonlocal bar, bar_cur
         if bar_cur.strip():
             bar = bar_cur
-        elif bar_cur and bar is not None:
-            emit(bar)
+        elif bar_cur:
             bar = None
         bar_cur = ""
 
     while True:
         chunk = os.read(0, 65536)
-        if not chunk:
-            break
-        for piece in SEP_RE.split(chunk.decode("utf-8", errors="replace")):
+        for piece in SEP_RE.split(decoder.decode(chunk, final=not chunk)):
             if piece == "\r":
                 if in_bar:
                     settle_bar()
@@ -70,6 +76,8 @@ def main():
         if in_bar:
             settle_bar()
             in_bar = False
+        if not chunk:
+            break
 
     emit(text)
     if bar is not None:

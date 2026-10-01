@@ -37,3 +37,4 @@ activations_dir/
 checkpoints_dir/
 embeddings_dir/
 wandb/
+*.log

@@ -62,7 +62,7 @@ def save_activations(activations, count, split, save_count, args):
     filename = f"{args.dataset_name}_{split}_activations_{args.model_name}_{args.layer}_{args.attachment_point}_part{save_count + 1}.pt"
     save_path = os.path.join(args.output_dir, filename)
     torch.save(torch.tensor(activations_tensor.cpu().numpy()), save_path)
-    print(f"Saved the activations at count {count} to {save_path}")
+    tqdm.tqdm.write(f"Saved the activations at count {count} to {save_path}")
 
 def collect_activations(args):
     model, processor = get_model(args)
@@ -86,7 +86,7 @@ def collect_activations(args):
     count = 0
     save_count = 0
     pbar = tqdm.tqdm(dl)
-    for image in pbar:
+    for i, image in enumerate(pbar):
 
         with torch.no_grad():
             model.encode(image)
@@ -95,13 +95,11 @@ def collect_activations(args):
         count += image['pixel_values'].shape[0]
         pbar.set_postfix({'Processed data points': count})
 
-        if count >= args.save_every * (save_count + 1):
+        # Save the remainder on the last batch, while the bar is still open, so the bar is printed last
+        if count >= args.save_every * (save_count + 1) or i == len(dl) - 1:
             save_activations(activations, count, args.split, save_count, args)
             activations = []
             save_count += 1
-
-    if activations:
-        save_activations(activations, count, args.split, save_count, args)
 
 
 if __name__ == "__main__":

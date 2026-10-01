@@ -20,14 +20,7 @@ export PIP_CACHE_DIR="${VOLUME}/.cache/pip"
 export WANDB_DIR="${REPO_DIR}"
 mkdir -p "${ARCHIVE_ROOT}" "${DATA_ROOT}" "${HF_HOME}" "${TORCH_HOME}" "${PIP_CACHE_DIR}"
 
-# SSH key for git pull/push, kept on the volume (~/.ssh does not survive a pod restart).
-# The network volume may not honor chmod (files stay 0666), and ssh rejects such keys,
-# so copy it to the container disk with 600 permissions and use that copy.
-if [ -f "${VOLUME}/.ssh/id_ed25519" ]; then
-  mkdir -p ~/.ssh && chmod 700 ~/.ssh
-  install -m 600 "${VOLUME}/.ssh/id_ed25519" ~/.ssh/id_ed25519_github
-  export GIT_SSH_COMMAND="ssh -i ${HOME}/.ssh/id_ed25519_github -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
-fi
+# SSH key for git is set up by experiments/start_tunnel.sh
 
 # Global git config (user.name/email etc.) kept on the volume; `git config --global` writes here too
 export GIT_CONFIG_GLOBAL="${VOLUME}/.gitconfig"
